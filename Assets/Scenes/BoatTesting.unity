@@ -390,6 +390,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BoatCollider
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 6961fb4b179d6db4883ef226e7dbf00a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6961fb4b179d6db4883ef226e7dbf00a, type: 3}
 --- !u!1 &1196789316
@@ -574,7 +578,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1709906840}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.460844, y: 3.07, z: 5.7435713}
+  m_LocalPosition: {x: 36.61, y: 3.07, z: 5.7435713}
   m_LocalScale: {x: 4, y: 4, z: 4}
   m_Children: []
   m_Father: {fileID: 0}
