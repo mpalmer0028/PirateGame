@@ -122,12 +122,12 @@ public class PlayerMovementScript : MonoBehaviour
     /// </summary>
     /// <returns></returns>
     public Rigidbody AddRigidbody(){
-        RB = GetComponent<Rigidbody>();
-        if(RB){
-            return RB;
+        this.RB = GetComponent<Rigidbody>();
+        if(!this.RB){
+            this.RB = gameObject.AddComponent<Rigidbody>();
         }
-        this.RB = gameObject.AddComponent<Rigidbody>();
         // Add any Rigidbody settings here 
+        RB.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         return this.RB;
     }
 }
