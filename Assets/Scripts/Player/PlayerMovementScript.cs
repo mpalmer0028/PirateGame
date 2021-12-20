@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,15 +16,11 @@ public class PlayerMovementScript : MonoBehaviour
         }
         set {
             _Vehicle = value;
-            if(value){
-                if(GetComponent<Rigidbody>()) {
-                    Destroy(gameObject.GetComponent<Rigidbody>());
-                    //Debug.Log(GetComponent<Rigidbody>());
-                }
-               transform.SetParent(value.transform);
+            if(value){                
+               VehicleWalkMode();
             } else if(!GetComponent<Rigidbody>()){
-                transform.SetParent(null);
-                this.AddRigidbody();
+                transform.SetParent(null, true);
+                this.LandWalkMode();
             }
         }
     }
@@ -32,6 +29,11 @@ public class PlayerMovementScript : MonoBehaviour
     /// Walk speed on land
     /// </summary>
     public float MoveSpeed;
+
+    /// <summary>
+    /// On vehicle walk speed on land
+    /// </summary>
+    public float OnVehicleWalkSpeed;
 
     //public float RotateSpeed;
     /// <summary>
@@ -59,20 +61,27 @@ public class PlayerMovementScript : MonoBehaviour
     /// </summary>
     private float Pitch = 0.0f;
     
+    private BoxCollider BC;
     private Rigidbody RB;
     private GameObject Camera;
+    private GameObject VehicleRotationCorrector;
+    private CharacterController CC;
+    public float DistanceTooVehicle;
 
     // Start is called before the first frame update
     void Start()
     {
+        VehicleRotationCorrector = transform.Find("VehicleRotationCorrector").gameObject;
+        Camera = VehicleRotationCorrector.transform.Find("Camera").gameObject;
+        BC =  GetComponent<BoxCollider>();
+        CC =  GetComponent<CharacterController>();
+
         if(Vehicle) {
-            Destroy(GetComponent<Rigidbody>());
-            transform.SetParent(Vehicle.transform);
+            VehicleWalkMode();
+            
         } else {
-            AddRigidbody();
+            LandWalkMode();
         }
-        
-        Camera = transform.Find("Camera").gameObject;
     }
 
     // Update is called once per frame
@@ -83,31 +92,46 @@ public class PlayerMovementScript : MonoBehaviour
     
     void FixedUpdate()
     {
-        //Debug.Assert(_Vehicle == Vehicle);
+        // Track camera rotation from mouse
+        Yaw += CameraSpeedH * Input.GetAxis("Mouse X");
+        Pitch -= CameraSpeedV * Input.GetAxis("Mouse Y");
+
+        // Limit angle
+        Pitch = Pitch > MaxMinCameraAngleX ? MaxMinCameraAngleX : Pitch;    
+        Pitch = Pitch < -MaxMinCameraAngleX ? -MaxMinCameraAngleX : Pitch;    
+
+        var cameraVector = new Vector3(0.0f, Yaw, 0.0f);
+
         if(Vehicle){
+            //transform.rotation = Quaternion.Euler(0, transform.rotation.y, 0); 
+            // Rotate player
+            // var inverseRotation =  Quaternion.Inverse(Vehicle.transform.rotation);
+            // inverseRotation = Quaternion.Euler(inverseRotation.eulerAngles.x,0,inverseRotation.eulerAngles.z);
+            // VehicleRotationCorrector.transform.rotation = inverseRotation;
+            transform.rotation = Quaternion.Euler(0, Yaw, 0);
+
+            // Move player
+            var inputVector = transform.rotation * new Vector3(Input.GetAxis("Horizontal")*OnVehicleWalkSpeed,0,Input.GetAxis("Vertical")*OnVehicleWalkSpeed);
             
+            if(DistanceTooVehicle>.6f){
+                CC.SimpleMove(inputVector);    
+            }else{
+                CC.Move(inputVector);
+            }
         } else if(RB) {
-            // Track camera rotation from mouse
-            Yaw += CameraSpeedH * Input.GetAxis("Mouse X");
-            Pitch -= CameraSpeedV * Input.GetAxis("Mouse Y");
-
-            // Limit angle
-            Pitch = Pitch > MaxMinCameraAngleX ? MaxMinCameraAngleX : Pitch;    
-            Pitch = Pitch < -MaxMinCameraAngleX ? -MaxMinCameraAngleX : Pitch;    
-
-            var cameraVector = new Vector3(0.0f, Yaw, 0.0f);
-
+            
             // Move player
             var inputVector = new Vector3(Input.GetAxis("Horizontal")*MoveSpeed,0,Input.GetAxis("Vertical")*MoveSpeed);
             RB.AddRelativeForce(inputVector,ForceMode.Force);
             // Rotate player
             RB.rotation = Quaternion.Euler(RB.rotation.eulerAngles.x, Yaw, RB.rotation.eulerAngles.z);
             
-            // Move Camera
-            Camera.transform.localRotation = Quaternion.Euler(Pitch,0,0);
+            
 
             //RB.AddRelativeTorque(new Vector3(0,Input.GetAxis("Horizontal")*RotateSpeed,0),ForceMode.Force);
         }
+        // Move Camera
+        Camera.transform.localRotation = Quaternion.Euler(Pitch,0,0);
     }
         
     // is called by Unity when ever a value in the inspector is changed
@@ -118,16 +142,33 @@ public class PlayerMovementScript : MonoBehaviour
     }
 
     /// <summary>
-    /// Add rigidbody with settings to player
+    /// Enable walk mode for player
     /// </summary>
     /// <returns></returns>
-    public Rigidbody AddRigidbody(){
+    public Rigidbody LandWalkMode(){
         this.RB = GetComponent<Rigidbody>();
         if(!this.RB){
             this.RB = gameObject.AddComponent<Rigidbody>();
         }
         // Add any Rigidbody settings here 
         RB.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        CC.enabled = false;
+        BC.enabled = true;
         return this.RB;
     }
+
+    /// <summary>
+    /// Enable vehicle walk mode for player
+    /// </summary>
+    public void VehicleWalkMode()
+    {
+        if(GetComponent<Rigidbody>()) {
+            Destroy(gameObject.GetComponent<Rigidbody>());
+        }
+        transform.SetParent(Vehicle.transform, true);
+        BC.enabled = false;
+        CC.enabled = true;
+    }
+
 }
