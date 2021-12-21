@@ -61,24 +61,25 @@ public class PlayerMovementScript : MonoBehaviour
     /// </summary>
     private float Pitch = 0.0f;
     
-    private BoxCollider BC;
+    private CapsuleCollider Collider;
     private Rigidbody RB;
     private GameObject Camera;
     private GameObject VehicleRotationCorrector;
     private CharacterController CC;
     public float DistanceTooVehicle;
+    public Vector3 VehiclePoint;
+    private float ConnectedShipY;
 
     // Start is called before the first frame update
     void Start()
     {
         VehicleRotationCorrector = transform.Find("VehicleRotationCorrector").gameObject;
         Camera = VehicleRotationCorrector.transform.Find("Camera").gameObject;
-        BC =  GetComponent<BoxCollider>();
+        Collider =  GetComponent<CapsuleCollider>();
         CC =  GetComponent<CharacterController>();
 
         if(Vehicle) {
             VehicleWalkMode();
-            
         } else {
             LandWalkMode();
         }
@@ -108,16 +109,22 @@ public class PlayerMovementScript : MonoBehaviour
             // var inverseRotation =  Quaternion.Inverse(Vehicle.transform.rotation);
             // inverseRotation = Quaternion.Euler(inverseRotation.eulerAngles.x,0,inverseRotation.eulerAngles.z);
             // VehicleRotationCorrector.transform.rotation = inverseRotation;
+            var shipRotationToAdd = ConnectedShipY != Vehicle.transform.rotation.eulerAngles.y ? Vehicle.transform.rotation.eulerAngles.y- ConnectedShipY : 0;
+            ConnectedShipY = Vehicle.transform.rotation.eulerAngles.y;
+            Yaw += shipRotationToAdd;
             transform.rotation = Quaternion.Euler(0, Yaw, 0);
-
+            
             // Move player
             var inputVector = transform.rotation * new Vector3(Input.GetAxis("Horizontal")*OnVehicleWalkSpeed,0,Input.GetAxis("Vertical")*OnVehicleWalkSpeed);
-            
-            if(DistanceTooVehicle>.6f){
-                CC.SimpleMove(inputVector);    
+            RaycastHit hit;
+            Vector3 moveVector;
+            if(Physics.Raycast(transform.position + inputVector, Vector3.down, out hit, .5f, 1 << 6)){
+                moveVector = hit.point - (transform.position+new Vector3(0,-.5f,0));
+                //CC.Move(inputVector);
             }else{
-                CC.Move(inputVector);
+                
             }
+            
         } else if(RB) {
             
             // Move player
@@ -150,11 +157,14 @@ public class PlayerMovementScript : MonoBehaviour
         if(!this.RB){
             this.RB = gameObject.AddComponent<Rigidbody>();
         }
+        // if(GetComponent<CharacterController>()) {
+        //     Destroy(gameObject.GetComponent<CharacterController>());
+        // }
         // Add any Rigidbody settings here 
         RB.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
-        CC.enabled = false;
-        BC.enabled = true;
+        //CC.enabled = false;
+        Collider.enabled = true;
         return this.RB;
     }
 
@@ -163,12 +173,19 @@ public class PlayerMovementScript : MonoBehaviour
     /// </summary>
     public void VehicleWalkMode()
     {
+        // this.CC = GetComponent<CharacterController>();
+        // if(!this.CC){
+        //     this.CC = gameObject.AddComponent<CharacterController>();
+        // }
+        //ConnectedYaw = Yaw;
+        ConnectedShipY = Vehicle.transform.rotation.eulerAngles.y;
+
         if(GetComponent<Rigidbody>()) {
             Destroy(gameObject.GetComponent<Rigidbody>());
         }
         transform.SetParent(Vehicle.transform, true);
-        BC.enabled = false;
-        CC.enabled = true;
+        Collider.enabled = false;
+        //CC.enabled = true;
     }
 
 }
